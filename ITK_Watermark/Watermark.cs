@@ -1,37 +1,37 @@
-﻿using static System.Net.Mime.MediaTypeNames;
-using System.Drawing;
+﻿using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
-using System.Windows;
+using System;
+using System.Security;
+
+[assembly: AllowPartiallyTrustedCallers]
 
 namespace ITK_Watermark
 {
     public class Watermark
     {
-
-        public byte[] GenerateWatermarkLayer(String text, int width, int height, float fontSize = 22, float gap = 100, float angle = 30, double alpha = 0.2)
+        public byte[] GenerateWatermarkLayer(string text, int width, int height, float fontSize = 22, float gap = 100, float angle = 30, double alpha = 0.1, Color color = new Color(), bool shadow = false)
         {
+            color = Color.FromArgb((int)(255*alpha), color==null?Color.White:color);
             System.Drawing.Image img = new Bitmap(width, height);
-            return Generate(img, text, width, height, fontSize, gap, angle, alpha);
+            return Generate(img, text, width, height, fontSize, gap, angle, color);
         }
-        public byte[] DrawWatermark(System.Drawing.Image img, String text, float fontSize = 22, float gap = 100, float angle = 30, double alpha = 0.2) {
-            return Generate(img, text, img.Width, img.Height, fontSize, gap, angle, alpha);
+        public byte[] DrawWatermark(System.Drawing.Image img, string text, float fontSize = 22, float gap = 100, float angle = 30, double alpha = 0.1, Color color = new Color(), bool shadow = false) {
+            color = Color.FromArgb((int)(255 * alpha), color == null ? Color.White : color);
+            
+            return Generate(img, text, img.Width, img.Height, fontSize, gap, angle, color);
         }
 
-        private byte[] Generate(System.Drawing.Image img, String text, int width, int height, float fontSize = 22, float gap = 100, float angle = 30, double alpha = 0.2) {
-            Color textColor = Color.FromArgb((int)(255*alpha), 255, 255, 255);
-            Color backColor = Color.FromArgb(0, 255, 255, 255);
+        private byte[] Generate(System.Drawing.Image img, string text, int width, int height, float fontSize, float gap, float angle, Color textColor) {
             Font font = new Font(FontFamily.GenericSansSerif, fontSize, FontStyle.Bold);
             Graphics drawing = Graphics.FromImage(img);
             SizeF textSize = drawing.MeasureString(text, font);
             float radius = (float)Math.Sqrt(Math.Pow(width, 2) + Math.Pow(height, 2));
             float n = gap / 2;
-            String date = "On " + DateTime.Now.ToString("dd MMM yyyy hh:mm tt");
-            Font fontDate = new Font(FontFamily.GenericSansSerif, fontSize / 2);
-
-            //drawing.Clear(backColor);
-
+            string date = "On " + DateTime.Now.ToString("dd MMM yyyy hh:mm tt");
+            Font fontDate = new Font(FontFamily.GenericSansSerif, fontSize / 2, FontStyle.Bold);
             Brush textBrush = new SolidBrush(textColor);
+
             //Draw here
             drawing.TranslateTransform(width / 2, height / 2);
             drawing.RotateTransform(angle);
@@ -39,8 +39,11 @@ namespace ITK_Watermark
             {
                 for (int j = 0; j < n; j++)
                 {
-                    drawing.DrawString(text, font, textBrush, (textSize.Width + gap) * i - radius / 2, (textSize.Height + gap) * j - radius / 2);
-                    drawing.DrawString(date, fontDate, textBrush, (textSize.Width + gap) * i - radius / 2, textSize.Height + (textSize.Height + gap) * j - radius / 2);
+                    var x = (textSize.Width + gap) * i - radius / 2;
+                    var y = (textSize.Height + gap) * j - radius / 2;
+
+                    drawing.DrawString(text, font, textBrush, x, y);
+                    drawing.DrawString(date, fontDate, textBrush, x, textSize.Height + y);
                 }
             }
 
